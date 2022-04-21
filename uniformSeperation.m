@@ -16,10 +16,12 @@ function [cp, wp_t] = uniformSeperation(wp, des_vel, knot_span)
     est_vel = des_vel;
 
     % Estimation of distance to velocity
+    % Distance travelled in 1 knot
     dist = est_vel * knot_span; 
     
     % Check to see which axis has the biggest segment count
     wp_t = [];
+    % height(wp) size of waypoint - 1 = segments 
     for q = 1:height(wp)-1
         % ceil helps to push values above 0 to 1 or more
         % or else seg count is 0 and causes an error

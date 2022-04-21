@@ -1,4 +1,4 @@
-function [pos, vel, acc, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, isclamped)
+function [pos, vel, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, isclamped)
     %% Using Bspline Segment code
 
     % Following the notation from
@@ -42,8 +42,6 @@ function [pos, vel, acc, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, iscl
     P = ctrlpt;
     % How much to segment a knotspan (internal evaluation in a spline segment)
     % "isclamped" applies here
-    buffer = zeros(1,order + 1);
-    knots_total = n + order + 1 + 1;
     % Range of index to evaluate according
     range = [order:numel(P)]; 
 
@@ -56,16 +54,18 @@ function [pos, vel, acc, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, iscl
     % t = linspace(timespan(1), timespan(2), (numel(range))); % knots
     
     dt = (timespan(2) - timespan(1)) / (numel(range)-(order+1)); % span of 1 knot
-    t = linspace(timespan(1), timespan(2), (numel(range))-(order)); % knots
+    t = linspace(timespan(1), timespan(2), numel(range)); % knots
     % End of solution for matching time span
     
     pos = []; vel = []; acc = []; jrk = []; tt = []; 
     
     kn_seg = knotdiv; % Division of 1 span or 1 segment
    
-    % for l = 1:numel(range)-1
-    for l = 1:numel(range)-1-order
+    for l = 1:numel(range)-1
+    % for l = 1:numel(range)-1-order
         idx = range(l) - order;
+        fprintf('idx %f/%f\n', idx, numel(range));
+   
         nxt_idx = idx + 1; 
         lpos = zeros(1,kn_seg-1);
         lvel = zeros(1,kn_seg-1);
@@ -119,15 +119,15 @@ function [pos, vel, acc, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, iscl
             % Matrix multiplication to attain the pos, vel and acc
             lpos(m) = u * M * p;
             lvel(m) = inv_dt * du * M * p;
-            lacc(m) = inv_dt^2 * ddu * M * p;
-            ljrk(m) = inv_dt^3 * dddu * M * p;
+            % lacc(m) = inv_dt^2 * ddu * M * p;
+            % ljrk(m) = inv_dt^3 * dddu * M * p;
         end
 
         % Add the segment to the plot array
         pos = [pos lpos];
         vel = [vel lvel];
-        acc = [acc lacc];
-        jrk = [jrk ljrk];
+        % acc = [acc lacc];
+        % jrk = [jrk ljrk];
         tt = [tt timeActual];
         % tc = [tc timeConst];
     end

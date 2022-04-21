@@ -22,7 +22,7 @@ FLT_MAX = exp(37);
 % Bearing 0 means facing y direction
 % Give [Initial] and [Final] Bearing
 ib_deg = -20; fb_deg = 0;
-Vconst = 10;
+Vconst = 15;
 
 timeint = 0.2;
 range = 400;
@@ -36,7 +36,7 @@ lineup_dist = 40;
 buffer_dist = 15;
 
 order = 3;
-knot_factor = 3; % Factor for how many divisions in one knot
+knot_factor = 5; % Factor for how many divisions in one knot
 
 knot_span = timeint * knot_factor; % Changes the dist estimation for 1 knot
 
@@ -69,7 +69,8 @@ descend_point = [buffer_point(1) - descend_dist * sin(fb), ...
 lineup_point = [descend_point(1) - lineup_dist * sin(fb), ...
     descend_point(2) - lineup_dist * cos(fb), flightHeight];
 
-dist_int = Vconst * timeint;
+% dist_int = Vconst * timeint;
+dist_int = Vconst;
 
 % Get a line to represent direction, just for plotting
 line_i(1,:) = ip(1:2); line_f(1,:) = lineup_point(1:2);
@@ -93,7 +94,7 @@ end
 wp = [lineup_point; descend_point; buffer_point; fp];
 
 [cp_tmp,wp_t] = uniformSeperation(wp, Vconst, knot_span);
-cp_tmp = [cp_tmp, fp'];
+cp_tmp = [path', cp_tmp, fp'];
 timespan = [wp_t(1), wp_t(end)];
 
 cp = zeros(3,length(cp_tmp) + 2*(order-1));
@@ -117,10 +118,12 @@ c2(:,1) = nCf(1) + minTurnRad .* sin(c);
 c2(:,2) = nCf(2) + minTurnRad .* cos(c);
 
 %% Plotting
-figure
+fig = figure;
+clf % Clear figure
+
+hold on
 % Markers
 plot3(ip(1),ip(2),ip(3),'.',fp(1),fp(2),fp(3),'.','MarkerSize',12);
-hold on
 plot3(c1(:,1),c1(:,2),h,'--', c2(:,1),c2(:,2),h,'--');
 plot3(line_i(:,1),line_i(:,2),[flightHeight;flightHeight],'--');
 plot3(line_f(:,1),line_f(:,2),[flightHeight;flightHeight],'--');
