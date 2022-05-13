@@ -1,4 +1,4 @@
-function [path,nCi,nCf,flag,segment] = dubinTimeBased(ip, fp, ib, fb, minTurnRad, dist_int, flightHeight)
+function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnRad, dist_int, flightHeight)
     %% Constants
     g = 9.81;
     FLT_MAX = exp(37);

@@ -64,7 +64,7 @@ function [pos, vel, tt] = getBSpline(order, timespan, ctrlpt, knotdiv, isclamped
     for l = 1:numel(range)-1
     % for l = 1:numel(range)-1-order
         idx = range(l) - order;
-        fprintf('idx %f/%f\n', idx, numel(range));
+        % fprintf('idx %f/%f\n', idx, numel(range));
    
         nxt_idx = idx + 1; 
         lpos = zeros(1,kn_seg-1);

@@ -226,39 +226,46 @@ tmp = ib; size_path = 0;
 
 % Loop to fit the calculated values into a path 1
 for i=1:int_seg1 + 1
-    path(size_path + i,:) = [nCi(1) + minTurnRad * sin(wrapToPi(tmp + turn1_int + offset1)), ...
-        nCi(2) + minTurnRad * cos(wrapToPi(tmp + turn1_int + offset1))];
-    tmp = tmp + turn1_int;
+    path(size_path + i,:) = ...
+        [nCi(1) + minTurnRad * sin(wrapToPi(tmp + (i-1) * turn1_int + offset1)), ...
+        nCi(2) + minTurnRad * cos(wrapToPi(tmp + (i-1) * turn1_int + offset1))];
 end
 
 %% Segment 2 = Straight line segment
-int_seg2 = floor((str_dist - remainder1 * dist_int) / dist_int);
-remainder2 = (str_dist - remainder1 * dist_int) / dist_int - int_seg2;
-size_path = size_path + int_seg1;
-tmp_pos = [pt(1,1) + (remainder1 * dist_int) * sin(ac), ...
-    pt(1,2) + (remainder1 * dist_int) * cos(ac)];
+overlap1 = (1 - remainder1) * dist_int;
+fprintf('overlap1 = %f m\n', overlap1);
+int_seg2 = floor((str_dist - overlap1) / dist_int);
+remainder2 = (str_dist - overlap1) / dist_int - int_seg2;
+size_path = size_path + int_seg1 + 1;
+tmp_pos = [pt(1,1) + overlap1 * sin(ac), ...
+    pt(1,2) + overlap1 * cos(ac)];
 
 % Loop to fit the calculated values into a path 2
 for i=1:int_seg2 + 1
-    path(size_path + i,:) = [tmp_pos(1) + dist_int * sin(ac) * (i-1), ...
+    path(size_path + i,:) = ...
+        [tmp_pos(1) + dist_int * sin(ac) * (i-1), ...
         tmp_pos(2) + dist_int * cos(ac) * (i-1)];
 end
 
 %% Segment 3 = 3rd Turn
-int_seg3 = floor((arclength2 - remainder2 * dist_int) / dist_int);
-remainder3 = (arclength2 - remainder2 * dist_int) / dist_int - int_seg3;
+overlap2 = (1 - remainder2) * dist_int;
+fprintf('overlap2 = %f m\n', overlap2);
+int_seg3 = floor((arclength2 - overlap2) / dist_int);
+remainder3 = (arclength2 - overlap2) / dist_int - int_seg3;
 
-remaining_angle = remainder2 * dist_int / minTurnRad  * ab2/abs(ab2);
+remaining_angle = overlap2 / minTurnRad  * ab2/abs(ab2);
 % We convert the fitted angle into angle + direction 
 turn2 = (int_seg3 * dist_int) / minTurnRad * ab2/abs(ab2);
 
 % Find the interval for turn 2 
 turn2_int = turn2 / int_seg3;
-tmp = ac + remaining_angle; size_path = size_path + int_seg2;
+tmp = ac + remaining_angle; 
+size_path = size_path + int_seg2 + 1;
 
 % Loop to fit the calculated values into a path 3
-for i=1:int_seg3
-    path(size_path + i,:) = [nCf(1) + minTurnRad * sin(wrapToPi(tmp + (i-1) * turn2_int + offset2)), ...
+for i=1:int_seg3 + 1
+    path(size_path + i,:) = ...
+        [nCf(1) + minTurnRad * sin(wrapToPi(tmp + (i-1) * turn2_int + offset2)), ...
         nCf(2) + minTurnRad * cos(wrapToPi(tmp + (i-1) * turn2_int + offset2))];
 end
 
@@ -299,5 +306,6 @@ plot3(r1(:,1),r1(:,2),h,'--',r2(:,1),r2(:,2),h,'--');
 % Path
 plot3(path(:,1),path(:,2),h_path,'x','MarkerSize',4)
 grid on 
+view(2)
 axis([avgp(1)-limit(1) avgp(1)+limit(1) ...
     avgp(2)-limit(2) avgp(2)+limit(2) 0 flightHeight+10])

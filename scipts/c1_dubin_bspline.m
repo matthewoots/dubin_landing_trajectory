@@ -3,7 +3,10 @@ clear all
 close all
 
 % Include bspline library
-addpath('bspline');
+prefix = '..';
+addpath(strcat(prefix, '/functions'));
+% Include bspline library
+addpath(strcat(prefix, '/functions','/bspline'));
 
 %% Introduction
 % 1. [Dubin] path to align the FW to the heading
@@ -85,7 +88,7 @@ minTurnRad = Vconst^2 / (g * tan(rollmax));
 
 %% Main function
 
-[path,nCi,nCf,flag,segment] = dubinTimeBased(ip, lineup_point, ib, fb, minTurnRad, dist_int, flightHeight);
+[path,nCi,nCf,flag,segment] = dubin_time_based(ip, lineup_point, ib, fb, minTurnRad, dist_int, flightHeight);
 if ~flag
     return
 end
