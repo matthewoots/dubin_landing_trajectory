@@ -58,9 +58,11 @@ start_dubin = [C(1) + radius * sin(limit_pair(1)), ...
 end_dubin = [C(1) + radius * sin(limit_pair(2)), ...
             C(2) + radius * cos(limit_pair(2)), P(3)];
 fprintf('[ct] limit_pair (%.3f %.3f)\n', limit_pair(1), limit_pair(2));
+
+%% Tracker function
 [next_point, flag] = planar_circle_tracker(C, P, radius, tolerance, rot, limit_pair);
 
-% To plot the track line from current to next point
+%% To plot the track line from current to next point
 track_line = [p; next_point];
 
 
