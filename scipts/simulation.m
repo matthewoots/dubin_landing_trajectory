@@ -92,7 +92,11 @@ end
 % (2) To construct the path after the dubin path till the end
 ending_segment = [lineup_point; descend_point; buffer_point; fp];
 [seg2_path, wp_t] = uniform_seperation(ending_segment, Vconst, 1);
+% With uniform seperation, the last point is not set hence we have to add
+% it back
+seg2_path(:,end+1) = fp';
 path = [seg1_path ; seg2_path'];
+
 
 %% Draw the Circle
 c = linspace(-pi,pi,20);

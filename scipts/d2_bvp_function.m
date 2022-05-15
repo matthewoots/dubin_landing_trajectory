@@ -90,90 +90,27 @@ dt = timeint;
 runtime = total_time;
 iter = 1;
 
+s0(1:3,1) = limit_pair(1,:)';
+s0(4:6,1) = limit_pair_vel(1,:)';
+s0(7:9,1) = limit_pair_acc(1,:)';
+
+d0(1:3,1) = limit_pair(2,:)';
+d0(4:6,1) = limit_pair_vel(2,:)';
+d0(7:9,1) = limit_pair_acc(2,:)';
+
 %% Original BVP without finding landing optimal curve
-intervals_original = linspace(0,runtime,runtime/timeint);
-T = runtime;
-sOpt_original = [];
-p0 = limit_pair(1,:)';
-v0 = limit_pair_vel(1,:)';
-a0 = limit_pair_acc(1,:)';
-
-pf = limit_pair(2,:)';
-vf = limit_pair_vel(2,:)';
-af = limit_pair_acc(2,:)';
-
-delta =  [(pf - p0 -v0 * T - 0.5 * a0 * T^2) ; ...
-          (vf - v0 -a0 * T) ; ...
-          (af - a0)];
-m = [720, -360*T, 60*T^2 ; -360*T, 168*T^2, -24*T^3 ; 60*T^2, -24*T^3, 3*T^4];
-M = zeros(length(m)*width(m),length(m)*width(m));
-for i = 1:length(m)*width(m)
-    M1 = eye(3);
-    l = mod(i,length(m)) + length(m)*(~mod(i,length(m)));
-    h = ceil(i/3);
-    M1(M1==1) = m(l,h);
-    %  fprintf('(%d) %d, %d\n',i,1+(l-1)*length(m),1+(h-1)*length(m));
-    M(1+(l-1)*length(m):1+(l-1)*length(m)+2,1+(h-1)*length(m):1+(h-1)*length(m)+2) = M1;
-end
-
-abg = 1/T^5 * M * delta;
-alpha = abg(1:3); beta = abg(4:6); gamma = abg(7:9);
-
-for ts = 1:width(intervals_original)
-    t = intervals_original(ts);
-    sOpt_original(:,ts) = [(alpha/120 * t^5 + beta/24 * t^4 + gamma/6 * t^3 + a0/2 * t^2 + v0 * t + p0); ...
-                     (alpha/24 * t^4 + beta/6 * t^3 + gamma/2 * t^2 + a0 * t + v0); ...
-                     (alpha/6 * t^3 + beta/2 * t^2 + gamma * t + a0)];
-end
+[intervals_original, sOpt_original] = ...
+    boundary_value_problem(timeint, runtime, d0, s0);
 
 %% BVP with finding landing optimal curve
 while (~pass_checks)
     sOpt = [];
-    z_neg = false;
-    intervals = linspace(0,runtime,runtime/timeint);
-    T = runtime;
-
-    p0 = limit_pair(1,:)';
-    v0 = limit_pair_vel(1,:)';
-    a0 = limit_pair_acc(1,:)';
-
-    pf = limit_pair(2,:)';
-    vf = limit_pair_vel(2,:)';
-    af = limit_pair_acc(2,:)';
-
-    delta =  [(pf - p0 -v0 * T - 0.5 * a0 * T^2) ; ...
-              (vf - v0 -a0 * T) ; ...
-              (af - a0)];
-    m = [720, -360*T, 60*T^2 ; -360*T, 168*T^2, -24*T^3 ; 60*T^2, -24*T^3, 3*T^4];
-    M = zeros(length(m)*width(m),length(m)*width(m));
-    for i = 1:length(m)*width(m)
-        M1 = eye(3);
-        l = mod(i,length(m)) + length(m)*(~mod(i,length(m)));
-        h = ceil(i/3);
-        M1(M1==1) = m(l,h);
-        %  fprintf('(%d) %d, %d\n',i,1+(l-1)*length(m),1+(h-1)*length(m));
-        M(1+(l-1)*length(m):1+(l-1)*length(m)+2,1+(h-1)*length(m):1+(h-1)*length(m)+2) = M1;
-    end
-
-    abg = 1/T^5 * M * delta;
-    alpha = abg(1:3); beta = abg(4:6); gamma = abg(7:9);
-
-    for ts = 1:width(intervals)
-        t = intervals(ts);
-        sOpt(:,ts) = [(alpha/120 * t^5 + beta/24 * t^4 + gamma/6 * t^3 + a0/2 * t^2 + v0 * t + p0); ...
-                         (alpha/24 * t^4 + beta/6 * t^3 + gamma/2 * t^2 + a0 * t + v0); ...
-                         (alpha/6 * t^3 + beta/2 * t^2 + gamma * t + a0)];
-        %% Check pass criteria
-        % Whether the z velocity in the curve has any
-        if (sOpt(6,ts) > 0.001)
-            z_neg = true;
-            break; 
-        end
-    end
-
-    % If z velocity is foudn to have a positive value we will continue here
+    [intervals, sOpt] = ...
+        boundary_value_problem(timeint, runtime, d0, s0);
+    %% Check pass criteria
+    % If z velocity is found to have a positive value we will continue here
     % and not update pass_checks
-    if z_neg
+    if sum(sOpt(6,:) > 0.001) > 0
         runtime = runtime - timeint;
         iter = iter + 1;
         continue; 
