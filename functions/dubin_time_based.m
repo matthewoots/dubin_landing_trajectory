@@ -53,6 +53,7 @@ function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnR
             disp('[error] No circle configuration found')
             flag = false;
             path = 0;
+            segment = 0;
             return
     end
 
@@ -64,6 +65,7 @@ function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnR
        fprintf('dist must be more than %f, currently %f\n', sqrt(4 * minTurnRad^2),dist);
        flag = false;
        path = 0;
+       segment = 0;
        return
     end
 

@@ -1,4 +1,4 @@
-function [cp, wp_t] = uniformSeperation(wp, des_vel, knot_span)   
+function [cp, wp_t] = uniform_seperation(wp, des_vel, interval)   
 
     % Get seperation between waypoints
     for q = 1:height(wp)-1
@@ -17,7 +17,7 @@ function [cp, wp_t] = uniformSeperation(wp, des_vel, knot_span)
 
     % Estimation of distance to velocity
     % Distance travelled in 1 knot
-    dist = est_vel * knot_span; 
+    dist = est_vel * interval; 
     
     % Check to see which axis has the biggest segment count
     wp_t = [];
@@ -28,7 +28,7 @@ function [cp, wp_t] = uniformSeperation(wp, des_vel, knot_span)
         seg(q) = ceil(wp_sep(q)/dist);
         % total number of segments will be according to the distance
         seg_total = seg_total + seg(q);
-        wp_t(q) = seg_total * knot_span;
+        wp_t(q) = seg_total * interval;
     end
     
     wp_t = [0 wp_t];
