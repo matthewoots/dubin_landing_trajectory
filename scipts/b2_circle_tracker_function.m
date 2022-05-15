@@ -31,7 +31,7 @@ rollmax = 25 / 180 * pi;
 
 % Represented by phi in the paper
 minTurnRad = Vconst^2 / (g * tan(rollmax));
-nCi = [0 0 flightHeight];
+nCi = [4 4 flightHeight];
 
 % Get position of point
 for i=1:2

@@ -1,4 +1,6 @@
-function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnRad, dist_int, flightHeight)
+function [keypoints, turn_angles, length_of_legs, nCi, nCf, flag, angle_limits] = ...
+                dubin_geometrical(ip, fp, ib, fb, minTurnRad, flightHeight)
+
     %% Constants
     g = 9.81;
     FLT_MAX = exp(37);
@@ -52,8 +54,10 @@ function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnR
         otherwise
             disp('[error] No circle configuration found')
             flag = false;
-            path = 0;
-            segment = 0;
+            keypoints = 0;
+            turn_angles = 0;
+            length_of_legs = 0;
+            angle_limits = 0;
             return
     end
 
@@ -64,8 +68,10 @@ function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnR
        fprintf('c1 = %f, c2 = %f\n', dist^2, 4 * minTurnRad^2);
        fprintf('dist must be more than %f, currently %f\n', sqrt(4 * minTurnRad^2),dist);
        flag = false;
-       path = 0;
-       segment = 0;
+       keypoints = 0;
+       turn_angles = 0;
+       length_of_legs = 0;
+       angle_limits = 0;
        return
     end
 
@@ -176,74 +182,39 @@ function [path,nCi,nCf,flag,segment] = dubin_time_based(ip, fp, ib, fb, minTurnR
     % Position of Straight Line Point of 2nd turn 
     pt(2,:) = [nCf(1) + minTurnRad * sin(a2), ...
         nCf(2) + minTurnRad * cos(a2)];
-
-
-    %% Make segments into path
-    % Find the remainder that needs to be carried forward to the next segment
-
-    %% Segment 1 = 1st Turn
-    int_seg1 = floor(arclength1 / dist_int); 
-    remainder1 = arclength1 / dist_int - int_seg1;
-    % We convert the fitted angle into angle + direction 
-    turn1 = (int_seg1 * dist_int) / minTurnRad * ab1/abs(ab1);
-    % Find the interval for turn 1
-    turn1_int = turn1 / int_seg1;
-    tmp = ib; size_path = 0;
-
-    % Loop to fit the calculated values into a path 1
-    for i=1:int_seg1 + 1
-        path(size_path + i,:) = ...
-            [nCi(1) + minTurnRad * sin(wrapToPi(tmp + (i-1) * turn1_int + offset1)), ...
-            nCi(2) + minTurnRad * cos(wrapToPi(tmp + (i-1) * turn1_int + offset1))];
-    end
-
-    fprintf('remainder1 = %f \n', remainder1);
-    %% Segment 2 = Straight line segment
-    overlap1 = (1 - remainder1) * dist_int;
-    fprintf('overlap1 = %f m\n', overlap1);
-    int_seg2 = floor((str_dist - overlap1) / dist_int);
-    remainder2 = (str_dist - overlap1) / dist_int - int_seg2;
-    size_path = size_path + int_seg1 + 1;
-    tmp_pos = [pt(1,1) + overlap1 * sin(ac), ...
-        pt(1,2) + overlap1 * cos(ac)];
-
-    % Loop to fit the calculated values into a path 2
-    for i=1:int_seg2 + 1
-        path(size_path + i,:) = ...
-            [tmp_pos(1) + dist_int * sin(ac) * (i-1), ...
-            tmp_pos(2) + dist_int * cos(ac) * (i-1)];
-    end
-
-    fprintf('remainder2 = %f \n', remainder2);
-    %% Segment 3 = 3rd Turn
-    overlap2 = (1 - remainder2) * dist_int;
-    fprintf('overlap2 = %f m\n', overlap2);
-    int_seg3 = floor((arclength2 - overlap2) / dist_int);
-    remainder3 = (arclength2 - overlap2) / dist_int - int_seg3;
-
-    remaining_angle = overlap2 / minTurnRad  * ab2/abs(ab2);
-    % We convert the fitted angle into angle + direction 
-    turn2 = (int_seg3 * dist_int) / minTurnRad * ab2/abs(ab2);
-
-    % Find the interval for turn 2 
-    turn2_int = turn2 / int_seg3;
-    tmp = ac + remaining_angle; 
-    size_path = size_path + int_seg2 + 1;
-
-    % Loop to fit the calculated values into a path 3
-    for i=1:int_seg3 + 1
-        path(size_path + i,:) = ...
-            [nCf(1) + minTurnRad * sin(wrapToPi(tmp + (i-1) * turn2_int + offset2)), ...
-            nCf(2) + minTurnRad * cos(wrapToPi(tmp + (i-1) * turn2_int + offset2))];
-    end
-
-    h_path = flightHeight + zeros(1, length(path));
     
-    fprintf('   int_seg1 = %d \n', int_seg1 + 1);
-    fprintf('   int_seg2 = %d \n', int_seg2 + 1);
-    fprintf('   int_seg3 = %d \n', int_seg3 + 1);
-    segment = [int_seg1 + 1, int_seg2 + 1, int_seg3 + 1];
-
-    path(:,3) = h_path;
+    line_dist = (pt(2,:) - pt(1,:)) / norm(pt(2,:) - pt(1,:));
+    pt_w_h = [pt(1,:),flightHeight ;
+              pt(2,:),flightHeight];
+    
+    keypoints = [ip; pt_w_h(1,:); pt_w_h(2,:); fp];
+    turn_angles = [ang_1turn, ang_2turn];
+    length_of_legs = [arclength1, line_dist, arclength2];
+    
+    cf = [0 1 0];
+    
+    cp = ip - [nCi,0]; % center to point
+    dotp = dot(cf, cp); % dot product between [x1, y1] and [x2, y2]
+    detp = cf(2)*cp(1) - cp(2)*cf(1); % determinant
+    al1_1 = atan2(detp, dotp);
+    
+    cp = pt_w_h(1,:) - [nCi,0]; % center to point
+    dotp = dot(cf, cp); % dot product between [x1, y1] and [x2, y2]
+    detp = cf(2)*cp(1) - cp(2)*cf(1); % determinant
+    al1_2 = atan2(detp, dotp);
+    
+    cp = pt_w_h(2,:) - [nCf,0]; % center to point
+    dotp = dot(cf, cp); % dot product between [x1, y1] and [x2, y2]
+    detp = cf(2)*cp(1) - cp(2)*cf(1); % determinant
+    al2_1 = atan2(detp, dotp);
+    
+    cp = fp - [nCf,0]; % center to point
+    dotp = dot(cf, cp); % dot product between [x1, y1] and [x2, y2]
+    detp = cf(2)*cp(1) - cp(2)*cf(1); % determinant
+    al2_2 = atan2(detp, dotp);
+    
+    
+    angle_limits = [al1_1, al1_2; 
+                    al2_1, al2_2];
 end
 

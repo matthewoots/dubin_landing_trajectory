@@ -24,11 +24,12 @@ FLT_MAX = exp(37);
 % Give [Initial] and [Final] Bearing
 ib_deg = -20; fb_deg = 0;
 Vconst = 15;
+tolerance = 10;
 
 timeint = 0.2;
 range = 400;
 flightHeight = 20;
-padding = 150;
+padding = 100;
 
 rollmax = 25 / 180 * pi;
 descendAngle = 25 / 180 * pi;
@@ -99,7 +100,7 @@ path = [seg1_path ; seg2_path'];
 
 
 %% Draw the Circle
-c = linspace(-pi,pi,20);
+c = linspace(-pi,pi,40);
 h = flightHeight + zeros(1, length(c));
 
 c1(:,1) = nCi(1) + minTurnRad .* sin(c);
@@ -107,6 +108,108 @@ c1(:,2) = nCi(2) + minTurnRad .* cos(c);
 
 c2(:,1) = nCf(1) + minTurnRad .* sin(c);
 c2(:,2) = nCf(2) + minTurnRad .* cos(c);
+
+%% Recursive Loop
+fprintf('Starting UAV Path and Loop...\n');
+time = 0;
+leg = 1;
+
+[keypoints, turn_angles, length_of_legs, nCi, nCf, flag, angle_limits] = ...
+	dubin_geometrical(ip, lineup_point, ib, fb, minTurnRad, flightHeight);
+centers = [nCi, flightHeight;
+           nCf, flightHeight];
+
+for iter = 1:height(path)
+    clf % Clear figure
+    tic
+
+    %% Plotting process
+    hold on
+    
+    noise = [(rand(1) - 0.5) * 6.0, ...
+            (rand(1) - 0.5) * 6.0, ...
+            (rand(1) - 0.5) * 1.0];
+    
+    point = path(iter,:) + noise;
+    track_path(1:3,iter) = point;
+    
+    %% Tracker function
+    % When legs are circles
+    if leg == 1 || leg == 3
+        % ceil(leg/2) will give us the idx of which turn we are at
+        if turn_angles(ceil(leg/2)) < 0
+            rot = 'ccw';
+        else
+            rot = 'cw';
+        end
+
+        limit_pair = [];
+        limit_pair = angle_limits(ceil(leg/2),:);
+        C = centers(ceil(leg/2),:);
+        [next_point, flag] = planar_circle_tracker( ...
+            C, point, minTurnRad, tolerance, rot, limit_pair);
+        
+        % When flag is deactivated, that means that the leg is over
+        if flag == 0
+            leg = leg + 1;
+        end
+        
+    % When legs are lines
+    else
+        limit_pair = [];
+        limit_pair = [keypoints(leg,:); keypoints(leg+1,:)];
+        [next_point, flag] = line_tracker( ...
+            point, tolerance, limit_pair);
+        
+        % When flag is deactivated, that means that the leg is over
+        if flag == 0
+            leg = leg + 1;
+        end
+    end
+    %% To plot the track line from current to next point
+    track_line{iter} = [point; next_point];
+    
+    plot3(ip(1),ip(2),ip(3),'x',fp(1),fp(2),fp(3), ...
+        'x','MarkerSize',12,'DisplayName','start & end');
+    plot3(point(1),point(2),point(3), ...
+        'o','MarkerSize',8, 'DisplayName','path');
+    plot3(path(:,1),path(:,2),path(:,3), ...
+        '-.', 'LineWidth',1 ,'DisplayName','path');
+    for i = 1:iter
+        plot3(track_line{i}(:,1),track_line{i}(:,2),track_line{i}(:,3), ...
+            '-', 'LineWidth',2 ,'DisplayName','track line');
+        plot3(track_line{i}(:,1),track_line{i}(:,2),track_line{i}(:,3), ...
+            'x','MarkerSize',5 ,'DisplayName','track line');
+    end
+    
+    plot3(centers(:,1),centers(:,2),centers(:,3), ...
+        'x', 'DisplayName','dubin circle centers');
+    plot3(keypoints(:,1),keypoints(:,2),keypoints(:,3), ...
+        'o','DisplayName','keypoints');
+    
+    xlabel('long/m');
+    ylabel('lat/m');
+    zlabel('altitude/m');
+    view(2)
+    axis([path(iter,1)-limit(1) path(iter,1)+limit(1) ...
+        path(iter,2)-limit(2) path(iter,2)+limit(2) 0 flightHeight+10]) 
+    % axis([avgp(1)-limit(1) avgp(1)+limit(1) ...
+    %    avgp(2)-limit(2) avgp(2)+limit(2) 0 flightHeight+10])
+    grid on
+    title(sprintf('Iteration: %d, time: %4.2f', iter, time));
+    timer = toc;
+
+    %% Set delay to real time 
+    if timer < timeint
+       pause(timeint-timer); 
+    end
+    time = time + timeint;
+    
+    if leg == 4
+       break; 
+    end
+
+end
 
 %% Plotting
 fig = figure;
@@ -132,7 +235,9 @@ plot3(lineup_point(1),lineup_point(2),lineup_point(3), ...
 % Flight path
 % plot3(seg1_path(:,1),seg1_path(:,2),seg1_path(:,3),'x','MarkerSize',4);
 plot3(path(:,1),path(:,2),path(:,3), ...
-    'o','MarkerSize',5, 'DisplayName','path');
+    'o','MarkerSize',4, 'DisplayName','path');
+plot3(track_path(1,:),track_path(2,:),track_path(3,:), ...
+    '-','DisplayName','actual path');
 
 % Display settings
 grid on 

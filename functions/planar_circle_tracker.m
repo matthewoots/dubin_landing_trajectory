@@ -26,11 +26,11 @@ function [target, flag] = planar_circle_tracker(C, P, radius, tolerance, rot, li
     dotp = dot(cf, cp); % dot product between [x1, y1] and [x2, y2]
     detp = cf(2)*cp(1) - cp(2)*cf(1); % determinant
     curr_ang_rot = atan2(detp, dotp);
-    fprintf('[ct] cir_ang_change %.3f deg\n',cir_ang_change/pi * 180);
-    fprintf('[ct] curr_ang_rot %.3f deg\n',curr_ang_rot/pi * 180);
+    fprintf('[ct] cir_ang_change %.3f deg (%s)\n',cir_ang_change/pi * 180, rot);
+    fprintf('[ct] curr_ang_rot (nearest point) %.3f deg\n',curr_ang_rot/pi * 180);
     next_ang = wrapToPi(curr_ang_rot + dir * cir_ang_change);
     next_point = [C(1) + radius * sin(next_ang), ...
-                C(2) + radius * cos(next_ang), P(3)];
+                C(2) + radius * cos(next_ang), C(3)];
 
     %% Check that [next_point] is within the limits from dubin path
     % For clockwise (cw) final - initial will yield a positive value
@@ -61,7 +61,7 @@ function [target, flag] = planar_circle_tracker(C, P, radius, tolerance, rot, li
         end
     end
 
-    fprintf('[ct] angle_length %.3fdeg\n',angle_length * rad_to_deg);
+    fprintf('[ct] feasible angle_length %.3fdeg\n',angle_length * rad_to_deg);
 
     % Check with the next angle [next_ang]
     flag = (angle_length - angle_length_path) > 0;
